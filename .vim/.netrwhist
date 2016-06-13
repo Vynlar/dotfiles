@@ -1,0 +1,9 @@
+let g:netrw_dirhistmax  =10
+let g:netrw_dirhist_cnt =7
+let g:netrw_dirhist_1='/home/adrian/meteor/GamifyAGDG/client/templates'
+let g:netrw_dirhist_2='/home/adrian/meteor/GamifyAGDG/client/templates/userProfile'
+let g:netrw_dirhist_3='/home/adrian/meteor/GamifyAGDG/server/models'
+let g:netrw_dirhist_4='/home/adrian/meteor/GamifyAGDG/client/templates/userProfile'
+let g:netrw_dirhist_5='/home/adrian/node/discord/node_modules'
+let g:netrw_dirhist_6='/home/adrian/nikki/piglatin'
+let g:netrw_dirhist_7='/home/adrian/nikki/navigate3.py'
