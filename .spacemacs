@@ -18,6 +18,11 @@ values."
    ;; of a list then all discovered layers will be installed.
    dotspacemacs-configuration-layers
    '(
+     (markdown :variables markdown-live-preview-engine 'vmd)
+     markdown
+     yaml
+     sql
+     typescript
      ;; ----------------------------------------------------------------
      ;; Example of useful layers you may want to use right away.
      ;; Uncomment some layer names and press <SPC f e R> (Vim style) or
@@ -30,13 +35,17 @@ values."
      javascript
      emacs-lisp
      git
+     react
+     ranger
      html
+     scala
      ;; markdown
-     ;; org
+     org
+     (org :variables org-enable-github-support t)
      ;; (shell :variables
      ;;        shell-default-height 30
      ;;        shell-default-position 'bottom)
-     ;; spell-checking
+     spell-checking
      syntax-checking
      ;; version-control
      )
@@ -259,6 +268,10 @@ explicitly specified that a variable should be set before a package is loaded,
 you should place your code here."
   (setq-default evil-escape-key-sequence "jk")
 
+  (setq-default flycheck-temp-prefix ".")
+
+  (global-company-mode t)
+
   (define-key evil-normal-state-map (kbd "j") 'evil-next-visual-line)
   (define-key evil-normal-state-map (kbd "k") 'evil-previous-visual-line)
   (define-key evil-normal-state-map (kbd "C-h") 'evil-window-left)
@@ -266,13 +279,26 @@ you should place your code here."
   (define-key evil-normal-state-map (kbd "C-j") 'evil-window-down)
   (define-key evil-normal-state-map (kbd "C-k") 'evil-window-up)
 
-  (setq-default js2-basic-offset 2)
-  (setq-default js2-indent-level 2)
+  (setq-default js2-basic-offset 2
+                js2-indent-level 2
+                css-indent-offset 2
+                web-mode-markup-indent-offset 2
+                web-mode-css-indent-offset 2
+                web-mode-code-indent-offset 2
+                web-mode-attr-indent-offset 2
+                javascript/coffee-indent 2)
 
   (define-key evil-normal-state-map (kbd "SPC f f") 'projectile-find-file)
+  (setq-default dotspacemacs-configuration-layers
+                '((auto-completion :variables
+                                   auto-completion-enable-snippets-in-popup t)))
 
+  (setq flycheck-scalastyle-jar
+        "~/scala/scalastyle_2.11-0.8.0-batch.jar")
+  (setq-default dotspacemacs-configuration-layers
+                '((scala :variables scala-auto-start-ensime t)))
 
-  )
+)
 
 ;; Do not write anything past this comment. This is where Emacs will
 ;; auto-generate custom variable definitions.
