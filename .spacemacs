@@ -18,24 +18,33 @@ values."
    ;; of a list then all discovered layers will be installed.
    dotspacemacs-configuration-layers
    '(
+     elixir
+     (auto-completion :variables
+                      auto-completion-enable-help-tooltip t
+                      auto-completion-enable-snippets-in-popup t)
+
+     (syntax-checking :variables
+                      syntax-checking-enable-tooltips nil)
+
+     elm
+     python
+     sql
      ;; ----------------------------------------------------------------
      ;; Example of useful layers you may want to use right away.
      ;; Uncomment some layer names and press <SPC f e R> (Vim style) or
      ;; <M-m f e R> (Emacs style) to install them.
      ;; ----------------------------------------------------------------
      ;; better-defaults
-     shell
      auto-completion
      search-engine
      javascript
      emacs-lisp
      git
      html
-     ;; markdown
-     ;; org
+     react
+     shell
      ;; (shell :variables
-     ;;        shell-default-height 30
-     ;;        shell-default-position 'bottom)
+     ;;       shell-enable-smart-eshell t)
      ;; spell-checking
      syntax-checking
      ;; version-control
@@ -196,7 +205,7 @@ values."
    ;; If non nil the frame is maximized when Emacs starts up.
    ;; Takes effect only if `dotspacemacs-fullscreen-at-startup' is nil.
    ;; (default nil) (Emacs 24.4+ only)
-   dotspacemacs-maximized-at-startup nil
+   dotspacemacs-maximized-at-startup t
    ;; A value from the range (0..100), in increasing opacity, which describes
    ;; the transparency level of a frame when it's active or selected.
    ;; Transparency can be toggled through `toggle-transparency'. (default 90)
@@ -268,11 +277,26 @@ you should place your code here."
 
   (setq-default js2-basic-offset 2)
   (setq-default js2-indent-level 2)
+  (setq web-mode-code-indent-offset 2)
+  (setq web-mode-indent-style 2)
+  (setq js2-basic-offset 2)
+  (setq js-indent-level 2)
 
   (define-key evil-normal-state-map (kbd "SPC f f") 'projectile-find-file)
 
+  (defun ex-format ()
+    (interactive)
+    (save-excursion
+      (let ((default-directory (projectile-project-root)))
+      (shell-command-on-region (point-min)
+                               (point-max)
+                               "mix exfmt --stdin"
+                               (buffer-name) t))))
 
+  (with-eval-after-load 'company
+    (add-to-list 'company-backends 'company-elm))
   )
+  (setq elm-format-on-save t)
 
 ;; Do not write anything past this comment. This is where Emacs will
 ;; auto-generate custom variable definitions.
