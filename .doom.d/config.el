@@ -84,4 +84,29 @@
 ;; Associate .leex (Elixir LiveView) with web-mode
 (add-to-list 'auto-mode-alist '("\\.leex\\'" . web-mode))
 
+;; Associate .tsx with typescript-mode
+(add-to-list 'auto-mode-alist '("\\.tsx\\'" . typescript-mode))
+
 (setq-default flycheck-disabled-checkers '(typescript-tslint))
+
+;; Magit Forge
+(setq auth-sources '("~/.authinfo"))
+(setq forge-owned-accounts '(("Vynlar")))
+(map! :leader
+      :desc "List assigned pull requests"
+      "g l a" #'forge-list-assigned-pullreqs)
+
+(map! :leader
+      "g e" #'forge-edit-topic-assignees)
+
+(defun forge-assign-topic-to-me (n)
+  "Edit the assignees of the current topic.
+If there is no current topic or with a prefix argument read a
+topic N and modify that instead."
+  (interactive (list (forge-read-topic "Edit assignees of")))
+  (let* ((topic (forge-get-topic n))
+         (repo  (forge-get-repository topic)))
+    (forge--set-topic-assignees repo topic '("Vynlar"))))
+
+(map! :map forge-topic-mode-map
+      "C-c C-a" #'forge-assign-topic-to-me)
