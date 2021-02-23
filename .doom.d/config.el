@@ -20,11 +20,13 @@
 ;; They all accept either a font-spec, font string ("Input Mono-12"), or xlfd
 ;; font string. You generally only need these two:
 (setq doom-font (font-spec :family "Fira Code" :size 12))
+(setq doom-big-font (font-spec :family "Fira Code" :size 18))
 
 ;; There are two ways to load a theme. Both assume the theme is installed and
 ;; available. You can either set `doom-theme' or manually load a theme with the
 ;; `load-theme' function. This is the default:
-(setq doom-theme 'doom-dracula)
+;;(setq doom-theme 'doom-dracula)
+(setq doom-theme 'doom-challenger-deep)
 
 (custom-set-faces!
   '(ivy-minibuffer-match-face-1 :foreground "#aaaaaa"))
@@ -110,3 +112,7 @@ topic N and modify that instead."
 
 (map! :map forge-topic-mode-map
       "C-c C-a" #'forge-assign-topic-to-me)
+(map! :leader
+      "g a" #'forge-assign-topic-to-me)
+
+(add-hook 'after-init-hook #'global-prettier-mode)
