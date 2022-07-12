@@ -18,9 +18,13 @@
 ;; To install SOME-PACKAGE from MELPA, ELPA or emacsmirror:
 ;(package! some-package)
 
-(package! reason-mode)
+;(package! reason-mode)
 (package! graphql-mode)
-(package! prettier)
+;(package! prettier)
+(package! magit-section)
+(package! exec-path-from-shell)
+(package! alabaster-emacs
+  :recipe (:host github :repo "uzhne/alabaster-emacs"))
 
 ;; To install a package directly from a particular repo, you'll need to specify
 ;; a `:recipe'. You'll find documentation on what `:recipe' accepts here:
@@ -38,7 +42,15 @@
 ;; If you'd like to disable a package included with Doom, for whatever reason,
 ;; you can do so here with the `:disable' property:
 ;(package! builtin-package :disable t)
-
+;
+; Override the python-pytest module with my own version for now.
+; I have a PR open here: https://github.com/wbolster/emacs-python-pytest/pull/51
+; If that gets merged, I think we can go ahead and delete this
+;(package! python-pytest :disable t)
+;(package! my-python-pytest
+;  :recipe (:host github :repo "Vynlar/emacs-python-pytest"
+;           :files ("python-pytest.el")))
+;
 ;; You can override the recipe of a built in package without having to specify
 ;; all the properties for `:recipe'. These will inherit the rest of its recipe
 ;; from Doom or MELPA/ELPA/Emacsmirror:

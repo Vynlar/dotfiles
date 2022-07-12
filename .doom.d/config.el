@@ -1,8 +1,14 @@
 ;;; $DOOMDIR/config.el -*- lexical-binding: t; -*-
 
+;(when (memq window-system '(mac ns x))
+;  (exec-path-from-shell-initialize))
+
+(setq shell-command-switch "-ic")
+
 ;; Place your private configuration here! Remember, you do not need to run 'doom
 ;; sync' after modifying this file!
 
+(load! "lisp/triggers")
 
 ;; Some functionality uses this to identify you, e.g. GPG configuration, email
 ;; clients, file templates and snippets.
@@ -26,7 +32,8 @@
 ;; available. You can either set `doom-theme' or manually load a theme with the
 ;; `load-theme' function. This is the default:
 ;;(setq doom-theme 'doom-dracula)
-(setq doom-theme 'doom-challenger-deep)
+;;(setq doom-theme 'doom-challenger-deep)
+(setq doom-theme 'alabaster)
 
 (custom-set-faces!
   '(ivy-minibuffer-match-face-1 :foreground "#aaaaaa"))
@@ -80,8 +87,24 @@
 ;; Frame/window management
 (map! :leader "w o" #'other-frame)
 
-;; PHP
-(add-to-list '+format-on-save-enabled-modes 'php-mode t)
+;; Python
+; disable formatting on save for python mode
+(add-to-list '+format-on-save-enabled-modes 'python-mode t)
+
+
+;(setq python-pytest-executable "run_tests()\n{\nzsh -ic \"simon-docker unit-tests $*\"\n}\nrun_tests")
+;(setq python-pytest-executable "zsh -ic 'simon-docker unit-tests \"$0\" \"$@\"'")
+(setq python-pytest-executable "zsh -ic 'simon-boot && DJANGO_SETTINGS_MODULE=settings.test poetry run pytest -rw \"$@\" --nomigrations'")
+(setq python-pytest-unsaved-buffers-behavior t)
+
+(map! :mode python-mode :localleader "t r" #'python-pytest-repeat)
+; Run trigger integration tests
+(map! :mode python-mode :localleader "t i" #'triggers-test-run)
+
+;(defun python-setup-flycheck ()
+;  (flycheck-add-next-checker 'lsp 'python-flake8))
+;(add-hook 'python-mode-local-vars-hook #'python-setup-flycheck)
+
 
 ;; Associate .leex (Elixir LiveView) with web-mode
 (add-to-list 'auto-mode-alist '("\\.leex\\'" . web-mode))
@@ -115,4 +138,81 @@ topic N and modify that instead."
 (map! :leader
       "g a" #'forge-assign-topic-to-me)
 
-(add-hook 'after-init-hook #'global-prettier-mode)
+;(add-hook 'after-init-hook #'global-prettier-mode)
+;(add-hook! typescript-mode #'prettier-mode)
+;(add-hook! javascript-mode #'prettier-mode)
+;(add-hook! js2-mode #'prettier-mode)
+;(add-hook! web-mode #'prettier-mode)
+
+;(add-hook 'typescript-mode-hook #'format-all-mode)
+;(setq-hook! 'typescript-mode-hook +format-with 'prettier)
+(setq +format-with-lsp nil)
+
+
+;; Scala
+(map!
+ :mode scala-modebas
+ :localleader
+ :prefix ("l" . "LSP Lens")
+ "s" #'lsp-lens-show
+ "h" #'lsp-lens-hide
+ "l" #'lsp-avy-lens)
+(map!
+ :mode scala-mode
+ :localleader
+ "T" #'lsp-metals-treeview)
+(map!
+ :mode scala-mode
+ :localleader
+ :prefix ("t" . "Test")
+ "a" #'espr-run-all-tests)
+(map!
+ :mode scala-mode
+ :localleader
+ :prefix ("e" . "Error")
+ "e" #'lsp-treemacs-errors-list)
+(map!
+ :mode scala-mode
+ :localleader
+ :prefix ("r" . "Run")
+ "r" #'dap-debug
+ "d" #'dap-delete-session
+ "D" #'dap-delete-all-sessions
+ "l" #'dap-debug-last)
+
+(setq treemacs-text-scale 1)
+
+(defun triggers--scala-debug-provider (conf)
+  (if (and (plist-get conf :debugServer)
+           (plist-get conf :name))
+      conf
+    (-let (((&DebugSession :name :uri)
+            (lsp-send-execute-command
+             "debug-adapter-start"
+             conf)))
+      (list :debugServer (-> uri
+                             (split-string ":")
+                             cl-third
+                             string-to-number)
+            :type "scala"
+            :name name
+            :host "localhost"
+            :request "launch"
+            :noDebug t))))
+
+(add-hook! dap-mode (dap-register-debug-provider "scala" #'triggers--scala-debug-provider))
+(defun espr-run-all-tests ()
+    (interactive)
+    (dap-debug (list :name "All Tests"
+                     :type "scala"
+                     :runType "testTarget"
+                     :path (lsp--path-to-uri (buffer-file-name)))))
+
+(defun espr-run-file-tests ()
+    (interactive)
+    (dap-debug (list :name "Tests File"
+                     :type "scala"
+                     :runType "testFile"
+                     :path (lsp--path-to-uri (buffer-file-name)))))
+
+(setq stimmung-themes-dark-highlight-color "#222277")
