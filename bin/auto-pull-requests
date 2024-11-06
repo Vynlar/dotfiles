@@ -59,9 +59,8 @@ pr_template_header() {
     if [ -n "$existing_parent_pr" ]; then
         echo "## Dependencies"
         echo "- Depends on $existing_parent_pr"
+        echo
     fi
-    echo
-    echo "- Depends on $existing_parent_pr"
     echo "## Commits"
     echo
     git log --pretty=format:"%s" "$parent_branch..$branch"
@@ -97,9 +96,8 @@ while read -r branch <&3; do
     pr_template=$(prompt_pr_template)
 
     gh pr create \
-        --draft \
         --base "$parent_branch" \
         --head "$branch" \
-        --title "$jira_ticket_id: $branch" \
+        --title "$jira_ticket_id: $(git log -1 --pretty=format:"%s" "$branch")" \
         --body "$header $pr_template"
 done 3<<<"$branches"

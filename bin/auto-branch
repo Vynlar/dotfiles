@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# Automatically create branches for each commit in the query based on the commit
+# subject
+# Depends on slugify https://www.npmjs.com/package/slugify-cli
+set -euo pipefail
+
+prefix="adrian/"
+jira_ticket=""
+
+while getopts "j:" opt; do
+    case $opt in
+        j) jira_ticket="$OPTARG/" ;;
+        *) echo "Usage: $0 [-j jira_ticket] [query]" >&2; exit 1 ;;
+    esac
+done
+shift $((OPTIND -1))
+
+query="${1:-.}"
+
+commits="$(git-branchless query -r "(($query) - branches()) & draft()")"
+
+while read -r commit <&3; do
+    subject="$(git show -s --format='%s' "$commit")"
+    branch_name="$prefix$jira_ticket$(slugify "$subject")"
+    git branch "$branch_name" "$commit"
+done 3<<<"$commits"
