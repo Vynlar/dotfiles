@@ -55,7 +55,11 @@ prompt_pr_template() {
 pr_template_header() {
     local parent_branch=$1
     local branch=$2
-    echo "## Dependencies"
+    existing_parent_pr="$(gh pr view "$parent_branch" --json url -t "{{.url}}" || echo -n "")"
+    if [ -n "$existing_parent_pr" ]; then
+        echo "## Dependencies"
+        echo "- Depends on $existing_parent_pr"
+    fi
     echo
     echo "- Depends on $existing_parent_pr"
     echo "## Commits"
@@ -64,8 +68,6 @@ pr_template_header() {
     echo
     echo
 }
-
-pr_template=$(prompt_pr_template)
 
 while read -r branch <&3; do
     existing_pr="$(gh pr view "$branch" --json url -t "{{.url}}" || echo -n "")"
@@ -89,15 +91,10 @@ while read -r branch <&3; do
             echo "ERROR: Branch $branch has more than one parent branch: $parent_branch"
             exit 1
         fi
-
-        existing_parent_pr="$(gh pr view "$parent_branch" --json url -t "{{.url}}" || echo -n "")"
-        if [ -n "$existing_parent_pr" ]; then
-            echo "- Depends on $existing_parent_pr" | pbcopy
-            echo "Copied dependency message to clipboard for use in PR body"
-        fi
     fi
 
     header=$(pr_template_header "$parent_branch" "$branch")
+    pr_template=$(prompt_pr_template)
 
     gh pr create \
         --draft \
