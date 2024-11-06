@@ -1,0 +1,108 @@
+#!/usr/bin/env bash
+# Given a branchless query (defaults to `stack(.)`), creates PRs for every
+# branch matched by the query.  Each PR is created with its base as the nearest
+# ancestor of the given branch that is also a branch.
+set -euo pipefail
+
+query="((${1:-stack(.)}) & draft())"
+main="$(git config branchless.core.mainBranch)"
+
+git-branchless submit --create "$query"
+
+branches="$(git-branchless query -b "$query")"
+
+read -p "Enter JIRA ticket ID (e.g., PDE-1234): " jira_ticket_id
+
+# Function to prompt user for PR template sections
+prompt_pr_template() {
+    local pr_body=""
+
+    pr_body+="\n\nhttps://simondata.atlassian.net/browse/$jira_ticket_id\n\n"
+
+    read -p $'Please select option(s) corresponding to the level of testing you did (e.g., 1,3):\n1. I\'ve not tested anything, I\'m just throwing this one up for an emergency/other reasons\n2. I\'ve written new unit tests for this functionality\n3. I\'ve run the integration tests\n4. I\'ve written new integration tests for this functionality\n5. I\'ve done manual testing on my laptop to ensure it works\n6. I\'ve pushed this code somewhere and had other people test it out\nSelection: ' testing_selection
+
+    pr_body+="## Testing\n\n"
+    [[ $testing_selection == *"1"* ]] && pr_body+="* I've not tested anything, I'm just throwing this one up for an emergency/other reasons\n"
+    [[ $testing_selection == *"2"* ]] && pr_body+="* I've written new unit tests for this functionality\n"
+    [[ $testing_selection == *"3"* ]] && pr_body+="* I've run the integration tests\n"
+    [[ $testing_selection == *"4"* ]] && pr_body+="* I've written new integration tests for this functionality\n"
+    [[ $testing_selection == *"5"* ]] && pr_body+="* I've done manual testing on my laptop to ensure it works\n"
+    [[ $testing_selection == *"6"* ]] && pr_body+="* I've pushed this code somewhere and had other people test it out\n"
+
+    read -p $'Please select the risk level (choose one):\n1. THIS IS REALLY RISKY, I NEED EYES\n2. This is moderately risky, but I\'m feeling confident\n3. This is relatively risk-free and just needs a quick check\nSelection: ' risk_selection
+
+    pr_body+="\n## Risk\n\n"
+    [[ $risk_selection == "1" ]] && pr_body+="* THIS IS REALLY RISKY, I NEED EYES\n"
+    [[ $risk_selection == "2" ]] && pr_body+="* This is moderately risky, but I'm feeling confident\n"
+    [[ $risk_selection == "3"* ]] && pr_body+="* This is relatively risk-free and just needs a quick check\n"
+
+    read -p "Are you adding or changing dependencies? (y/n): " add_dependencies
+    if [[ $add_dependencies == "y" ]]; then
+        pr_body+="\n# Adding new dependencies\n\n"
+        pr_body+="**Instructions: if you're adding or changing dependencies, then you need to fill this out. Otherwise, delete the whole section.**\n\n"
+        pr_body+="All dependency changes in this repository must pass [licensing review](https://simondata.atlassian.net/wiki/spaces/eng/pages/184912848/Using+Open+Source+Software+at+Simon).\n\n"
+        pr_body+="The full process of how to upgrade can be found [on Confluence](https://simondata.atlassian.net/wiki/spaces/eng/pages/174161997/Upgrading+or+Adding+New+Dependencies#Upgrading-a-dependency).\n\n"
+        pr_body+="Checklist:\n\n"
+        pr_body+=" - [ ] I have ensured all dependencies in \`pyproject.toml\` or \`package.json\` use _exact_ versions (no \`^\` or \`~\` or \`*\`).\n"
+        pr_body+=" - [ ] I have ensured all transitive dependencies are in \`poetry.lock\` or \`package-lock.json\`.\n"
+        pr_body+=" - [ ] I have tagged an OCTO Engineer (L5+) in the Jira Ticket linked at the top of this PR for license review and approval.\n"
+        pr_body+=" - [ ] The approval is noted in comments on the Jira Ticket and this PR.\n"
+    fi
+
+    echo -e "$pr_body"
+}
+
+pr_template_header() {
+    local parent_branch=$1
+    local branch=$2
+    echo "## Dependencies"
+    echo
+    echo "- Depends on $existing_parent_pr"
+    echo "## Commits"
+    echo
+    git log --pretty=format:"%s" "$parent_branch..$branch"
+    echo
+    echo
+}
+
+pr_template=$(prompt_pr_template)
+
+while read -r branch <&3; do
+    existing_pr="$(gh pr view "$branch" --json url -t "{{.url}}" || echo -n "")"
+
+    if [ -n "$existing_pr" ]; then
+        echo "PR $existing_pr already exists for branch $branch"
+        continue
+    fi
+
+    # If branch name starts with "bases/" or "base/", don't make a PR for it
+    if [[ "$branch" =~ ^base(s)?/ ]]; then
+        continue
+    fi
+
+    ancestor_query="ancestors(parents(\"$branch\")) & branches() & draft()"
+    parent_branch=$(git-branchless query -b "$ancestor_query - ancestors(parents($ancestor_query))")
+    if [ -z "$parent_branch" ]; then
+        parent_branch="$main"
+    else
+        if [[ $parent_branch =~ $'\n' ]]; then
+            echo "ERROR: Branch $branch has more than one parent branch: $parent_branch"
+            exit 1
+        fi
+
+        existing_parent_pr="$(gh pr view "$parent_branch" --json url -t "{{.url}}" || echo -n "")"
+        if [ -n "$existing_parent_pr" ]; then
+            echo "- Depends on $existing_parent_pr" | pbcopy
+            echo "Copied dependency message to clipboard for use in PR body"
+        fi
+    fi
+
+    header=$(pr_template_header "$parent_branch" "$branch")
+
+    gh pr create \
+        --draft \
+        --base "$parent_branch" \
+        --head "$branch" \
+        --title "$jira_ticket_id: $branch" \
+        --body "$header $pr_template"
+done 3<<<"$branches"
