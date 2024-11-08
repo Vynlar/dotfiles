@@ -11,7 +11,17 @@ git-branchless submit --create "$query"
 
 branches="$(git-branchless query -b "$query")"
 
-read -p "Enter JIRA ticket ID (e.g., PDE-1234): " jira_ticket_id
+tmp_file="/tmp/current_jira_ticket"
+default_jira=""
+if [ -f "$tmp_file" ]; then
+    default_jira=$(cat "$tmp_file")
+fi
+
+read -p "Enter JIRA ticket ID (e.g., PDE-1234) [${default_jira}]: " jira_ticket_input
+jira_ticket_id=${jira_ticket_input:-$default_jira}
+
+# Save the JIRA ticket ID to a temporary file
+echo "$jira_ticket_id" > "$tmp_file"
 
 # Function to prompt user for PR template sections
 prompt_pr_template() {
